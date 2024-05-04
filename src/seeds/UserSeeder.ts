@@ -7,12 +7,11 @@ export class UserSeeder implements Seeder {
     track?: boolean | undefined;
     async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<void> {
         const userRepository = dataSource.getRepository(User);
-
         const userData = {
             name: "User",
-            email: "user@email.com",
+            email: "user@gmail.com",
             password: await bcrypt.hash("12345678", 10),
-}
+    }
 
         const userExists = await userRepository.findOneBy({ email: userData.email });
 

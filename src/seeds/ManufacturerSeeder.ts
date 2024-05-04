@@ -6,7 +6,6 @@ export class ManufacturerSeeder implements Seeder {
     track?: boolean | undefined;
     async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<void> {
         const manufacturerRepository = dataSource.getRepository(Manufacturer);
-
         const manufacturersData = [
             {
                 name: "Chevrolet",
@@ -40,7 +39,7 @@ export class ManufacturerSeeder implements Seeder {
         ];
 
         for (const data of manufacturersData) {
-            const existingManufacturer = await manufacturerRepository.findOne({ where: { imageUrl: data.imageUrl } });
+            const existingManufacturer = await manufacturerRepository.findOne({ where: { name: data.name } });
 
             if (!existingManufacturer) {
                 const newManufacturer = manufacturerRepository.create(data);
