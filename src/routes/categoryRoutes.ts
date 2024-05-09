@@ -4,13 +4,11 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 
 const categoryRoutes = Router();
 
-// categoryRoutes.use(authMiddleware);
-
 categoryRoutes
 .get('/categories', new CategoryController().getAllCategories)
 .get('/categories/:id', new CategoryController().getCategoryById)
-.post('/categories', new CategoryController().create)
-.put('/categories/:id', new CategoryController().update)
-.delete('/categories/:id', new CategoryController().delete);
+.post('/categories', authMiddleware, new CategoryController().create)
+.put('/categories/:id', authMiddleware, new CategoryController().update)
+.delete('/categories/:id', authMiddleware, new CategoryController().delete);
 
 export default categoryRoutes;
