@@ -33,8 +33,8 @@ export class CategoryController {
     async update(req: Request, res: Response) {
         const { id } = req.params;
 
-        const { name } = req.body;
-        const result = await categoryServices.updateCategory({ id, name });
+        const { name, vehicleTypeId } = req.body;
+        const result = await categoryServices.updateCategory({ id, name, vehicleTypeId });
         return res.json('Categoria atualizada com sucesso!');
     }
 
