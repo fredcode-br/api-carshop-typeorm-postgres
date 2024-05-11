@@ -1,6 +1,7 @@
 import { categoryRepository } from "../repositories/categoryRepository";
 import { BadRequestError, NotFoundError } from "../helpers/api-errors";
 import { vehicleTypeRepository } from "../repositories/vehicleTypeRepository";
+import { VehicleTypeServices } from "./VehicleTypeServices";
 
 type CategoryRequest = {
     id?: string;
@@ -67,10 +68,17 @@ export class CategoryServices {
         return newCategory;
     }
 
-    async updateCategory({ id, name }: Partial<CategoryRequest>) {
-        const updatedCategoryData = await categoryRepository.update(Number(id), { name });
+    async updateCategory({ id, name, vehicleTypeId }: Partial<CategoryRequest>) {
+       
+        const vehicleTypeServices = new VehicleTypeServices()
+        const vehicleType = await vehicleTypeServices.getOne({id: vehicleTypeId})
+        if (!vehicleType) {
+            throw new NotFoundError('Tipo de veículo não encontrado!');
+        }
+       
+            const updatedCategoryData = await categoryRepository.update(Number(id), { name, vehicleType });
 
-        return updatedCategoryData;
+            return updatedCategoryData;
     }
 
     async deleteCategory({ id }: Partial<CategoryRequest>) {
