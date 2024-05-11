@@ -20,7 +20,12 @@ export class CategoryServices {
     }
 
     async getOne({ id }: Partial<CategoryRequest>) {
-        const Category = await categoryRepository.findOneBy({ id: Number(id) });
+        const Category = await categoryRepository.find({
+            where: {
+                id: Number(id) 
+            },
+            relations: ['vehicleType']
+        });
 
         if (!Category) {
             throw new BadRequestError('Categoria não encontrada!');
