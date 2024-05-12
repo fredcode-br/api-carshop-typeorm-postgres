@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from "express";
 import { BadRequestError } from "../helpers/api-errors";
 import util from "util";
 
-const maxSize = 2 * 1024 * 1024;
+const maxSize = 8 * 1024 * 1024;
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const filetypes = /jpeg|jpg|png/;
@@ -42,7 +42,6 @@ const uploadManufacturerFile = multer({
     fileFilter: fileFilter,
 }).single("file");
 
-// Utilizando util.promisify para promisificar a função uploadManufacturerFile
 const uploadManufacturerMiddleware = util.promisify((req: Request, res: Response, next: NextFunction) => {
     uploadManufacturerFile(req, res, (err: any) => {
         if (err instanceof multer.MulterError) {

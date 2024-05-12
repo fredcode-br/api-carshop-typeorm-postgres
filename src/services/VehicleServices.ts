@@ -5,6 +5,8 @@ import Vehicle from "../entities/Vehicle";
 import { DeepPartial } from "typeorm";
 import { Status } from "../enums/EStatus";
 import { vehicleImageRepository } from "../repositories/vehicleImageRepository";
+import path from 'path';
+import fs from 'fs';
 
 interface VehicleRequest {
     name: string;
@@ -134,8 +136,50 @@ export class VehicleServices {
         // return updatedVehicleData;
     }
 
-    async deleteVehicle({ id }: Partial<IVehicle>) {
-        const vehicle = await vehicleRepository.delete({ id });
-        return !!vehicle;
+    async deleteImages(id: number) {
+        const images = await vehicleImageRepository
+            .createQueryBuilder("vehicle_image")
+            .select("vehicle_image.imageUrl", "imageUrl")
+            .where("vehicle_image.vehicle_id = :vehicleId", { vehicleId: id })
+            .getRawMany();
+            
+        const imageUrls = images.map(image => image.imageUrl);
+        
+        for (const imageUrl of imageUrls) {        
+            const absolutePath = path.join(__dirname, '../assets/',imageUrl);
+            fs.unlinkSync(absolutePath); 
+        }
+            
+        await vehicleImageRepository
+            .createQueryBuilder()
+            .delete()
+            .where("vehicle_id = :vehicleId", { vehicleId: id })
+            .execute();
+
+        return images;
     }
-}
+    
+    async deleteVehicle({ id }: Partial<IVehicle>) {
+        try {
+            if (!id || isNaN(id)) {
+                throw new BadRequestError('ID veículo inválido!');
+            }
+    
+            const existingVehicle = await vehicleRepository.findOneBy({ id });
+            if (!existingVehicle) {
+                throw new BadRequestError('Veículo não encontrado!');
+            }
+            
+            const deletedImageUrls = await this.deleteImages(id);
+            
+            const deletedVehicle = await vehicleRepository.delete(id);
+    
+            return { deletedVehicle, deletedImageUrls };
+        } catch (error) {
+            // Log o erro para depuração
+            console.error("Erro ao excluir veículo:", error);
+            // Retorne uma mensagem de erro genérica ao cliente
+            throw new Error('Erro ao excluir veículo. Por favor, tente novamente mais tarde.');
+        }
+    }
+}    

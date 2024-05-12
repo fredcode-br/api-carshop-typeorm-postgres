@@ -31,7 +31,7 @@ const vehicleStorage = multer.diskStorage({
     filename: (req, file, cb) => {
         const extension = path.extname(file.originalname);
         const timestamp = Date.now();
-        const newFilename = `${req.params.id}_${timestamp}${extension}`;
+        const newFilename = `${timestamp}${extension}`;
         cb(null, newFilename);
     },
 });
@@ -40,7 +40,7 @@ const uploadVehicleFiles = multer({
     storage: vehicleStorage,
     limits: { fileSize: maxSize },
     fileFilter: fileFilter,
-}).array("files", 5);
+}).array("files", 6);
 
 const uploadVehicleMiddleware = util.promisify(uploadVehicleFiles);
 
