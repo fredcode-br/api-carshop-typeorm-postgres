@@ -99,7 +99,7 @@ export class VehicleController {
         const imageUrls: string[] = [];
 
         for (const file of req.files as Express.Multer.File[]) {
-            const imageUrl = `/uploads/vehicles/${id}_${file.filename}`;
+            const imageUrl = `/uploads/vehicles/${file.filename}`;
             imageUrls.push(imageUrl);
         }
 
@@ -113,12 +113,13 @@ export class VehicleController {
 
         const { name } = req.body;
         const result = await vehicleServices.updateVehicle({ id: Number(id), name });
-        return res.json('Tipo de veículo atualizado com sucesso!');
+        return res.json('Veículo atualizado com sucesso!');
     }
 
     async delete(req: Request, res: Response) {
         const { id } = req.params;
         const result = await vehicleServices.deleteVehicle({ id: Number(id) });
-        return res.json('Tipo de veículo excluído com sucesso!');
+        return res.json('Veículo excluído com sucesso!');
     }
+    
 }
