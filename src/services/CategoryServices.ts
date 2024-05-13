@@ -11,13 +11,15 @@ type CategoryRequest = {
 
 export class CategoryServices {
     async getAll() {
-        const Categories = await categoryRepository.find();
+        const categories = await categoryRepository.find({
+            relations: ['vehicleType']
+        });
 
-        if (Categories.length == 0) {
+        if (categories.length == 0) {
             throw new BadRequestError('Nenhuma categoria encontrada!');
         }
 
-        return Categories;
+        return categories;
     }
 
     async getOne({ id }: Partial<CategoryRequest>) {
