@@ -34,7 +34,7 @@ interface ImagesRequest {
 }
 
 export class VehicleServices {
-    async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number }, page: number, limit: number) {
+    async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number; status?: string }, page: number, limit: number, sortBy?: string) {
         const filterOptions: any = {};
 
         if (filters.manufacturerId) {
@@ -52,13 +52,22 @@ export class VehicleServices {
         if (filters.maxPrice !== undefined && !isNaN(filters.maxPrice)) {
             filterOptions.price = { ...filterOptions.price, lte: filters.maxPrice };
         }
+        if (filters.status) {
+            filterOptions.status = filters.status;
+        }
 
         const options: any = {
             where: filterOptions,
             relations: ['images'],
             skip: (page - 1) * limit,
-            take: limit
+            take: limit,
         };
+
+        if (sortBy && typeof sortBy === 'string') {
+            options.order = {
+                [sortBy]: 'DESC'
+            };
+        }
 
         const vehicles = await vehicleRepository.findAndCount(options);
 
@@ -129,6 +138,28 @@ export class VehicleServices {
 
     }
 
+    async incrementViewCount(id: number) {
+        try {
+            if (!id || isNaN(id)) {
+                throw new BadRequestError('ID de veículo inválido!');
+            }
+
+            const existingVehicle = await vehicleRepository.findOneBy({ id });
+            if (!existingVehicle) {
+                throw new BadRequestError('Veículo não encontrado!');
+            }
+
+            existingVehicle.views = (existingVehicle.views || 0) + 1;
+
+            await vehicleRepository.save(existingVehicle);
+
+            return { message: 'Contador de visualizações incrementado com sucesso!' };
+        } catch (error) {
+            console.error("Erro ao incrementar visualização do veículo:", error);
+            throw new Error('Erro ao incrementar visualização do veículo. Por favor, tente novamente mais tarde.');
+        }
+    }
+
     async updateVehicle(vehicleData: Partial<IVehicle>) {
         const { id, ...rest } = vehicleData;
         // const updatedVehicleData = await vehicleRepository.update(Number(id), rest);
@@ -142,14 +173,14 @@ export class VehicleServices {
             .select("vehicle_image.imageUrl", "imageUrl")
             .where("vehicle_image.vehicle_id = :vehicleId", { vehicleId: id })
             .getRawMany();
-            
+
         const imageUrls = images.map(image => image.imageUrl);
-        
-        for (const imageUrl of imageUrls) {        
-            const absolutePath = path.join(__dirname, '../assets/',imageUrl);
-            fs.unlinkSync(absolutePath); 
+
+        for (const imageUrl of imageUrls) {
+            const absolutePath = path.join(__dirname, '../assets/', imageUrl);
+            fs.unlinkSync(absolutePath);
         }
-            
+
         await vehicleImageRepository
             .createQueryBuilder()
             .delete()
@@ -158,22 +189,22 @@ export class VehicleServices {
 
         return images;
     }
-    
+
     async deleteVehicle({ id }: Partial<IVehicle>) {
         try {
             if (!id || isNaN(id)) {
                 throw new BadRequestError('ID veículo inválido!');
             }
-    
+
             const existingVehicle = await vehicleRepository.findOneBy({ id });
             if (!existingVehicle) {
                 throw new BadRequestError('Veículo não encontrado!');
             }
-            
+
             const deletedImageUrls = await this.deleteImages(id);
-            
+
             const deletedVehicle = await vehicleRepository.delete(id);
-    
+
             return { deletedVehicle, deletedImageUrls };
         } catch (error) {
             // Log o erro para depuração

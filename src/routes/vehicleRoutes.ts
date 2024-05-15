@@ -8,6 +8,7 @@ const vehicleRoutes = Router();
 vehicleRoutes
 .get('/vehicles', new VehicleController().getAllVehicles)
 .get('/vehicles/:id', new VehicleController().getVehicleById)
+.post('/vehicles/:id/increment', new VehicleController().incrementView)
 .post('/vehicles', authMiddleware, new VehicleController().create)
 .post('/vehicles/:id/images', authMiddleware, new VehicleController().postImages)
 .put('/vehicles/:id', authMiddleware, new VehicleController().update)
