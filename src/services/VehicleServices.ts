@@ -58,7 +58,7 @@ export class VehicleServices {
 
         const options: any = {
             where: filterOptions,
-            relations: ['images'],
+            relations: ['images', 'manufacturer', 'category', 'vehicleType'],
             skip: (page - 1) * limit,
             take: limit,
         };
@@ -88,7 +88,7 @@ export class VehicleServices {
             where: {
                 id: Number(id)
             },
-            relations: ['images']
+            relations: ['images', 'manufacturer', 'category', 'vehicleType']
         });
 
         if (!vehicle) {
