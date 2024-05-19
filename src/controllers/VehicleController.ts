@@ -16,7 +16,7 @@ export class VehicleController {
 
     async getAllVehicles(req: Request, res: Response) {
         // try {
-            const { searchTerm, manufacturerId, categoryId, year, minPrice, maxPrice, status, page = 1, limit = 10 } = req.query;
+            const { searchTerm = '', manufacturerId, categoryId, year, minPrice, maxPrice, status, page = 1, limit = 10 } = req.query;
             let { sortBy } = req.query;
 
             const filters: { searchTerm?: string, manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number, status?: string } = {};
