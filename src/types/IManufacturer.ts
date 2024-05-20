@@ -1,6 +1,6 @@
 export interface IManufacturer {
-    id?: string;
+    id?: string | number;
     name: string;
     imageUrl: string;
-    created_at?: string;
+    created_at?: string | Date;
 }
