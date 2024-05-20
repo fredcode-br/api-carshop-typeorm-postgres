@@ -7,8 +7,15 @@ import { Status } from "../enums/EStatus";
 import { vehicleImageRepository } from "../repositories/vehicleImageRepository";
 import path from 'path';
 import fs from 'fs';
+import { manufacturerRepository } from "../repositories/manufacturerRepository";
+import { vehicleTypeRepository } from "../repositories/vehicleTypeRepository";
+import { categoryRepository } from "../repositories/categoryRepository";
+import { IManufacturer } from "../types/IManufacturer";
+import { IVehicleType } from "../types/IVehicleType";
+import { ICategory } from "../types/ICategory";
 
 interface VehicleRequest {
+    id?: number;
     name: string;
     model: string;
     price: number;
@@ -22,7 +29,7 @@ interface VehicleRequest {
     doorsNumber?: number;
     optionals?: string;
     comments?: string;
-    status: string;
+    status: Status;
     manufacturerId: number;
     vehicleTypeId: number;
     categoryId: number;
@@ -160,11 +167,91 @@ export class VehicleServices {
         }
     }
 
-    async updateVehicle(vehicleData: Partial<IVehicle>) {
-        const { id, ...rest } = vehicleData;
-        // const updatedVehicleData = await vehicleRepository.update(Number(id), rest);
+    async updateVehicle(id: number, vehicleData: Partial<VehicleRequest>) {
+        try {
+            const existingVehicle = await vehicleRepository.findOneBy({ id });
+            if (!existingVehicle) {
+                throw new BadRequestError('Veículo não encontrado!');
+            }
+    
 
-        // return updatedVehicleData;
+            if (vehicleData.manufacturerId) {
+                const manufacturer = await manufacturerRepository.findOneBy({ id: vehicleData.manufacturerId });
+                if (!manufacturer) {
+                    throw new BadRequestError('Fabricante não encontrado!');
+                }
+                existingVehicle.manufacturer = manufacturer;
+            }
+    
+            if (vehicleData.vehicleTypeId) {
+                const vehicleType = await vehicleTypeRepository.findOneBy({ id: vehicleData.vehicleTypeId });
+                if (!vehicleType) {
+                    throw new BadRequestError('Tipo de veículo não encontrado!');
+                }
+                existingVehicle.vehicleType = vehicleType;
+            }
+    
+            if (vehicleData.categoryId) {
+                const category = await categoryRepository.findOneBy({ id: vehicleData.categoryId });
+                if (!category) {
+                    throw new BadRequestError('Categoria não encontrada!');
+                }
+                existingVehicle.category = category;
+            }
+    
+            Object.assign(existingVehicle, vehicleData);
+            
+            await vehicleRepository.save(existingVehicle);
+    
+            return { message: 'Veículo atualizado com sucesso!' };
+        } catch (error) {
+            console.error("Erro ao atualizar veículo:", error);
+            if (error instanceof BadRequestError) {
+                throw error;
+            }
+            throw new Error('Erro ao atualizar veículo. Por favor, tente novamente mais tarde.');
+        }
+    }
+        
+    async updateImages(id: number, imageUrls: string[]) {
+        try {
+            const existingVehicle = await vehicleRepository.findOneBy({ id });
+            if (!existingVehicle) {
+                throw new BadRequestError('Veículo não encontrado!');
+            }
+    
+            await this.deleteImages(id); // Deleta todas as imagens do veículo
+    
+            // Adiciona as novas imagens
+            for (const imageUrl of imageUrls) {
+                const vehicleImage = await vehicleImageRepository.create({
+                    imageUrl,
+                    vehicle: existingVehicle
+                });
+                await vehicleImageRepository.save(vehicleImage);
+            }
+    
+            return { message: 'Imagens atualizadas com sucesso!' };
+        } catch (error) {
+            console.error("Erro ao atualizar imagens do veículo:", error);
+            throw new Error('Erro ao atualizar imagens do veículo. Por favor, tente novamente mais tarde.');
+        }
+    }
+    
+    async deleteImagesByUrl(imageUrls:string[]){
+        for (const imageUrl of imageUrls) {
+
+            const image = await vehicleImageRepository.findOneBy({ imageUrl });
+            if(!image){
+                throw new BadRequestError('Imagem não encontrada!');
+            }
+
+            await vehicleImageRepository.delete({ imageUrl })
+    
+            const absolutePath = path.join(__dirname, '../assets/', imageUrl);
+            fs.unlinkSync(absolutePath); 
+        }
+        return { message: 'Imagens removidas com sucesso!' };
     }
 
     async deleteImages(id: number) {

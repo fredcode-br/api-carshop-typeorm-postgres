@@ -3,6 +3,7 @@ import { VehicleServices } from "../services/VehicleServices";
 import { IVehicle } from "../types/IVehicle";
 import { BadRequestError } from "../helpers/api-errors";
 import { uploadVehicleMiddleware } from "../middlewares/uploadVehicleMiddleware";
+import { log } from "console";
 
 const vehicleServices = new VehicleServices();
 
@@ -127,12 +128,59 @@ export class VehicleController {
 
     async update(req: Request, res: Response) {
         const { id } = req.params;
+        const { name, model, price, year, km, engine, color, plate, gearbox, fuel, doorsNumber, optionals, comments, status, manufacturerId, vehicleTypeId, categoryId, images } = req.body;
 
-        const { name } = req.body;
-        const result = await vehicleServices.updateVehicle({ id: Number(id), name });
-        return res.json('Veículo atualizado com sucesso!');
+        const vehicleData = {
+            name,
+            model,
+            price,
+            year,
+            km,
+            engine,
+            color,
+            plate,
+            gearbox,
+            fuel,
+            doorsNumber,
+            optionals,
+            comments,
+            status,
+            manufacturerId,
+            vehicleTypeId,
+            categoryId,
+            images
+        }
+
+        const result = await vehicleServices.updateVehicle(Number(id), vehicleData);
+        return res.status(200).json(result);
     }
+    
+    async updateImages(req: Request, res: Response) {
+        const { id } = req.params;
+       
+        if (!id) {
+            throw new BadRequestError('Por favor, forneça o ID do veículo.');
+        }
 
+        await uploadVehicleMiddleware(req, res);
+
+        if (req.files != undefined && (Array.isArray(req.files) && req.files.length > 0)) {
+            console.log("Here")
+            const imageUrls: string[] = [];
+
+            for (const file of req.files as Express.Multer.File[]) {
+                const imageUrl = `/uploads/vehicles/${file.filename}`;
+                imageUrls.push(imageUrl);
+            }
+            await vehicleServices.postImages({ id, imageUrls })
+        }
+        
+        const { removedImageUrls } = req.body;
+        await vehicleServices.deleteImagesByUrl(removedImageUrls)
+
+        return { message: 'Imagens atualizadas com sucesso!' };
+    }
+    
     async delete(req: Request, res: Response) {
         const { id } = req.params;
         const result = await vehicleServices.deleteVehicle({ id: Number(id) });

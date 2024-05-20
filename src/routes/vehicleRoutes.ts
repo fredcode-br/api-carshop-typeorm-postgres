@@ -12,6 +12,7 @@ vehicleRoutes
 .post('/vehicles', authMiddleware, new VehicleController().create)
 .post('/vehicles/:id/images', authMiddleware, new VehicleController().postImages)
 .put('/vehicles/:id', authMiddleware, new VehicleController().update)
+.put('/vehicles/:id/images', authMiddleware, new VehicleController().updateImages)
 .delete('/vehicles/:id', authMiddleware, new VehicleController().delete);
 
 export default vehicleRoutes;

@@ -1,3 +1,4 @@
+import { Status } from "../enums/EStatus";
 import { ICategory } from "./ICategory";
 import { IManufacturer } from "./IManufacturer";
 import { IVehicleImage } from "./IVehicleImage";
@@ -18,11 +19,14 @@ export interface IVehicle {
     doorsNumber?: number;
     optionals?: string;
     comments?: string;
-    status: 'Disponível'| 'Desativado' | 'Vendido';
+    status: Status;
     views: number;
     manufacturer: IManufacturer;
-    vehicle_type: IVehicleType;
+    vehicleType: IVehicleType;
     category: ICategory;
     images: IVehicleImage[];
     created_at?: Date;
+    manufacturerId?: number;
+    categoryId?: number;
+    vehicleTypeId?: number;
 }
