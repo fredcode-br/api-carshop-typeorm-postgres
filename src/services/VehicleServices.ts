@@ -41,54 +41,57 @@ interface ImagesRequest {
 }
 
 export class VehicleServices {
-    async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number; status?: string }, page: number, limit: number, sortBy?: string) {
-        const filterOptions: any = {};
 
-        if (filters.manufacturerId) {
-            filterOptions.manufacturerId = filters.manufacturerId;
-        }
-        if (filters.categoryId) {
-            filterOptions.categoryId = filters.categoryId;
-        }
-        if (filters.year) {
-            filterOptions.year = filters.year;
-        }
-        if (filters.minPrice !== undefined && !isNaN(filters.minPrice)) {
-            filterOptions.price = { ...filterOptions.price, gte: filters.minPrice };
-        }
-        if (filters.maxPrice !== undefined && !isNaN(filters.maxPrice)) {
-            filterOptions.price = { ...filterOptions.price, lte: filters.maxPrice };
-        }
-        if (filters.status) {
-            filterOptions.status = filters.status;
-        }
 
-        const options: any = {
-            where: filterOptions,
-            relations: ['images', 'manufacturer', 'category', 'vehicleType'],
-            skip: (page - 1) * limit,
-            take: limit,
-        };
+async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number; status?: string; searchTerm?: string }, page: number, limit: number, sortBy?: string) {
+    
+    
+    const query = vehicleRepository.createQueryBuilder('vehicles')
+        .leftJoinAndSelect('vehicles.images', 'images')
+        .leftJoinAndSelect('vehicles.manufacturer', 'manufacturer')
+        .leftJoinAndSelect('vehicles.category', 'category')
+        .leftJoinAndSelect('vehicles.vehicleType', 'vehicleType');
 
-        if (sortBy && typeof sortBy === 'string') {
-            options.order = {
-                [sortBy]: 'DESC'
-            };
-        }
-
-        const vehicles = await vehicleRepository.findAndCount(options);
-
-        if (vehicles[0].length === 0) {
-            throw new BadRequestError('Nenhum veículo encontrado!');
-        }
-
-        return {
-            vehicles: vehicles[0],
-            totalCount: vehicles[1],
-            currentPage: page,
-            totalPages: Math.ceil(vehicles[1] / limit)
-        };
+    if (filters.manufacturerId !== undefined && !isNaN(filters.manufacturerId)) {
+        query.andWhere('vehicles.manufacturer_id = :manufacturerId', { manufacturerId: filters.manufacturerId });
     }
+    if (filters.categoryId !== undefined && !isNaN(filters.categoryId)) {
+        query.andWhere('vehicles.category_id = :categoryId', { categoryId: filters.categoryId });
+    }
+    if (filters.year !== undefined && !isNaN(filters.year)) {
+        query.andWhere('vehicles.year = :year', { year: filters.year });
+    }
+    if (filters.minPrice !== undefined && !isNaN(filters.minPrice)) {
+        query.andWhere('vehicles.price >= :minPrice', { minPrice: filters.minPrice });
+    }
+    if (filters.maxPrice !== undefined && !isNaN(filters.maxPrice)) {
+        query.andWhere('vehicles.price <= :maxPrice', { maxPrice: filters.maxPrice });
+    }
+    if (filters.status) {
+        query.andWhere('vehicles.status = :status', { status: filters.status });
+    }
+    if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+       
+        query.andWhere('vehicles.name LIKE :searchTerm', { searchTerm: `%${filters.searchTerm}%` });
+    }
+
+    if (sortBy && typeof sortBy === 'string') {
+        query.orderBy(`vehicles.${sortBy}`, 'DESC');
+    }
+
+    const [vehicles, totalCount] = await query
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getManyAndCount();
+
+    return {
+        vehicles,
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit)
+    };
+}
+
 
     async getOne({ id }: Partial<IVehicle>) {
         const vehicle = await vehicleRepository.findOne({

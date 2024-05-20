@@ -16,11 +16,15 @@ export class VehicleController {
     }
 
     async getAllVehicles(req: Request, res: Response) {
-        try {
-            const { manufacturerId, categoryId, year, minPrice, maxPrice, status, page = 1, limit = 10 } = req.query;
+        // try {
+            const { searchTerm = '', manufacturerId, categoryId, year, minPrice, maxPrice, status, page = 1, limit = 10 } = req.query;
             let { sortBy } = req.query;
 
-            const filters: { manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number, status?: string } = {};
+            const filters: { searchTerm?: string, manufacturerId?: number; categoryId?: number; year?: number; minPrice?: number; maxPrice?: number, status?: string } = {};
+
+            if (searchTerm !== undefined && searchTerm !== '') {
+                filters.searchTerm = searchTerm as string;
+            }
 
             if (manufacturerId !== undefined && !isNaN(parseInt(manufacturerId as string))) {
                 filters.manufacturerId = parseInt(manufacturerId as string);
@@ -63,9 +67,9 @@ export class VehicleController {
             );
 
             return res.json(result);
-        } catch (error) {
-            return res.status(500).json({ error: 'Internal server error' });
-        }
+        // } catch (error) {
+        //     return res.json(error);
+        // }
     }
 
     async create(req: Request, res: Response) {
