@@ -1,6 +1,6 @@
 import { IVehicle } from "../types/IVehicle";
 import { vehicleRepository } from "../repositories/vehicleRepository";
-import { BadRequestError } from "../helpers/api-errors";
+import { BadRequestError, NotFoundError } from "../helpers/api-errors";
 import Vehicle from "../entities/Vehicle";
 import { DeepPartial } from "typeorm";
 import { Status } from "../enums/EStatus";
@@ -109,14 +109,32 @@ async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: num
     }
 
     async create(vehicleData: VehicleRequest) {
+        const vehicleType = await vehicleTypeRepository.findOneBy({ id: Number(vehicleData.vehicleTypeId) });
+        const manufacturer = await manufacturerRepository.findOneBy({ id: Number(vehicleData.manufacturerId) });
+        const category = await categoryRepository.findOneBy({ id: Number(vehicleData.categoryId) });
+
+
+        if (!vehicleType) {
+            throw new NotFoundError('Tipo de veículo não encontrado!');
+        }
+        if (!manufacturer) {
+            throw new NotFoundError('Fabricante não encontrado!');
+        }
+        if (!category) {
+            throw new NotFoundError('Categoria não encontrada!');
+        }
 
         const deepPartialVehicleData: DeepPartial<Vehicle> = {
             ...vehicleData,
+            vehicleType: vehicleType,
+            manufacturer: manufacturer,
+            category: category,
             status: vehicleData.status as DeepPartial<Status>
         };
-
+        console.log(deepPartialVehicleData)
         const newVehicle = vehicleRepository.create(deepPartialVehicleData);
 
+        console.log(newVehicle)
         await vehicleRepository.save(newVehicle);
         return newVehicle;
     }
@@ -223,9 +241,8 @@ async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: num
                 throw new BadRequestError('Veículo não encontrado!');
             }
     
-            await this.deleteImages(id); // Deleta todas as imagens do veículo
-    
-            // Adiciona as novas imagens
+            await this.deleteImages(id); 
+            
             for (const imageUrl of imageUrls) {
                 const vehicleImage = await vehicleImageRepository.create({
                     imageUrl,
@@ -241,21 +258,21 @@ async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: num
         }
     }
     
-    async deleteImagesByUrl(imageUrls:string[]){
-        for (const imageUrl of imageUrls) {
-
+    async deleteImagesByUrl(imageUrls: Array<string>) {
+        for (let imageUrl of imageUrls) {
             const image = await vehicleImageRepository.findOneBy({ imageUrl });
-            if(!image){
+            if (!image) {
                 throw new BadRequestError('Imagem não encontrada!');
             }
-
-            await vehicleImageRepository.delete({ imageUrl })
+    
+            await vehicleImageRepository.delete({ imageUrl });
     
             const absolutePath = path.join(__dirname, '../assets/', imageUrl);
-            fs.unlinkSync(absolutePath); 
+            fs.unlinkSync(absolutePath);
         }
         return { message: 'Imagens removidas com sucesso!' };
     }
+    
 
     async deleteImages(id: number) {
         const images = await vehicleImageRepository
@@ -264,20 +281,24 @@ async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: num
             .where("vehicle_image.vehicle_id = :vehicleId", { vehicleId: id })
             .getRawMany();
 
-        const imageUrls = images.map(image => image.imageUrl);
+        if(images.length > 0){
 
-        for (const imageUrl of imageUrls) {
-            const absolutePath = path.join(__dirname, '../assets/', imageUrl);
-            fs.unlinkSync(absolutePath);
-        }
-
-        await vehicleImageRepository
+            const imageUrls = images.map(image => image.imageUrl);
+            
+            for (const imageUrl of imageUrls) {
+                const absolutePath = path.join(__dirname, '../assets/', imageUrl);
+                fs.unlinkSync(absolutePath);
+            }
+            
+            await vehicleImageRepository
             .createQueryBuilder()
             .delete()
             .where("vehicle_id = :vehicleId", { vehicleId: id })
             .execute();
+            return images;
+        }
+        return "Nenhuma imagem deletada"
 
-        return images;
     }
 
     async deleteVehicle({ id }: Partial<IVehicle>) {
@@ -290,16 +311,14 @@ async getAll(filters: { manufacturerId?: number; categoryId?: number; year?: num
             if (!existingVehicle) {
                 throw new BadRequestError('Veículo não encontrado!');
             }
-
+            
             const deletedImageUrls = await this.deleteImages(id);
 
             const deletedVehicle = await vehicleRepository.delete(id);
 
             return { deletedVehicle, deletedImageUrls };
         } catch (error) {
-            // Log o erro para depuração
             console.error("Erro ao excluir veículo:", error);
-            // Retorne uma mensagem de erro genérica ao cliente
             throw new Error('Erro ao excluir veículo. Por favor, tente novamente mais tarde.');
         }
     }
