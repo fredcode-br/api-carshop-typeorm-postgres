@@ -58,7 +58,7 @@ export class ManufacturerServices {
             throw new BadRequestError('ID do fabricante inválido!');
         }
 
-        if (!name || !imageUrl) {
+        if (!name && !imageUrl) {
             throw new BadRequestError('O nome e a URL da imagem são obrigatórios!');
         }
 
