@@ -95,7 +95,7 @@ export class VehicleController {
             categoryId,
             images
         }
-
+        // console.log(vehicleData)
         const result = await vehicleServices.create(vehicleData);
         return res.status(201).json(result);
     }
@@ -154,22 +154,22 @@ export class VehicleController {
             categoryId,
             images
         }
-
+      
         const result = await vehicleServices.updateVehicle(Number(id), vehicleData);
         return res.status(200).json(result);
     }
     
     async updateImages(req: Request, res: Response) {
         const { id } = req.params;
-       
+        
         if (!id) {
             throw new BadRequestError('Por favor, forneça o ID do veículo.');
         }
 
+         
         await uploadVehicleMiddleware(req, res);
 
         if (req.files != undefined && (Array.isArray(req.files) && req.files.length > 0)) {
-            console.log("Here")
             const imageUrls: string[] = [];
 
             for (const file of req.files as Express.Multer.File[]) {
@@ -178,11 +178,13 @@ export class VehicleController {
             }
             await vehicleServices.postImages({ id, imageUrls })
         }
-        
-        const { removedImageUrls } = req.body;
-        await vehicleServices.deleteImagesByUrl(removedImageUrls)
+    
+        const removedImageUrls = JSON.parse(req.body.removedImageUrls);
+        if(removedImageUrls.length > 0) {
+            await vehicleServices.deleteImagesByUrl(removedImageUrls)
+        }
 
-        return { message: 'Imagens atualizadas com sucesso!' };
+        return res.json('Imagens atualizadas com sucesso!');
     }
     
     async delete(req: Request, res: Response) {

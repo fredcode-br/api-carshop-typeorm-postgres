@@ -39,12 +39,10 @@ export class ManufacturerController {
     }
 
     async update(req: Request, res: Response) {
-        // await uploadManufacturerMiddleware(req, res);]
         await uploadManufacturerMiddleware(req, res);
         const { id } = req.params;
-        const { name } = req.body;
-        let imageUrl: string = "";
-        
+        const { name, imageUrl } = req.body;
+
         if (!id) {
             throw new BadRequestError('Por favor, forneça o ID do fabricante.');
         }
@@ -53,23 +51,39 @@ export class ManufacturerController {
             throw new BadRequestError('Por favor, forneça o nome do fabricante.');
         }
         
-        if (req.file) {
-            imageUrl = `/uploads/manufacturers/${req.file.filename}`;
-            const oldManufacturer = await manufacturerServices.getOne({ id });
-            if (oldManufacturer && oldManufacturer.imageUrl) {
-                const oldImagePath = oldManufacturer.imageUrl.split('/').pop();
-                const imagePath = `./src/assets/uploads/manufacturers/${oldImagePath}`;
-        
-                fs.unlink(imagePath, (err) => {
-                    if (err) {
-                        console.error("Erro ao excluir a imagem:", err);
-                    }
-                });
+        if(!imageUrl){
+            var newImageUrl: string = "";
+
+            if (req.file) {
+                newImageUrl = `/uploads/manufacturers/${req.file.filename}`;
+                const oldManufacturer = await manufacturerServices.getOne({ id });
+                if (oldManufacturer && oldManufacturer.imageUrl) {
+                    const oldImagePath = oldManufacturer.imageUrl.split('/').pop();
+                    const imagePath = `../assets/uploads/manufacturers/${oldImagePath}`;
+            
+                    fs.unlink(imagePath, (err) => {
+                        if (err) {
+                            console.error("Erro ao excluir a imagem:", err);
+                        }
+                    });
+                }
+            
+            //     const imagePath = `../assets/uploads/manufacturers/${manufacturer.imageUrl.split('/').pop()}`;
+            // fs.unlink(imagePath, (err) => {
+            //     if (err) {
+            //         console.error("Erro ao excluir a imagem:", err);
+            //     }
+            // });
             }
+            var url = imageUrl;
+
+            if(newImageUrl){
+                url = newImageUrl;
+            }
+            
+            console.log(url)
         }
-        
-        console.log(imageUrl)
-        await manufacturerServices.updateManufacturer({ id, name, imageUrl });
+        await manufacturerServices.updateManufacturer({ id, name, imageUrl: url });
 
         return res.json('Fabricante atualizado com sucesso!');
     }
